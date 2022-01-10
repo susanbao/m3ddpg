@@ -11,7 +11,7 @@ sys.path.append('../../')
 sys.path.append('../../../')
 
 import maddpg.common.tf_util as U
-from maddpg.trainer.maddpg import M3DDPGAgentTrainer
+from maddpg.trainer.m3ddpg import M3DDPGAgentTrainer
 import tensorflow.contrib.layers as layers
 
 def parse_args():
