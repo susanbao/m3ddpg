@@ -7,8 +7,6 @@ import sys
 import os
 
 sys.path.append('../')
-sys.path.append('../../')
-sys.path.append('../../../')
 
 import maddpg.common.tf_util as U
 from maddpg.trainer.maddpg import MADDPGAgentTrainer

@@ -158,7 +158,7 @@ def get_session():
     return tf.get_default_session()
 
 
-def make_session(num_cpu):
+def make_session(num_cpu, gpu_frac=0.3):
     """Returns a session that will use <num_cpu> CPU's only"""
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_frac)
     tf_config = tf.ConfigProto(
@@ -168,7 +168,7 @@ def make_session(num_cpu):
     return tf.Session(config=tf_config)
 
 
-def single_threaded_session():
+def single_threaded_session(gpu_frac=0.3):
     """Returns a session which will only use a single CPU"""
     return make_session(num_cpu=1, gpu_frac=gpu_frac)
 
