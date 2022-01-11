@@ -46,6 +46,10 @@ def parse_args():
     parser.add_argument("--benchmark-iters", type=int, default=100000, help="number of iterations run for benchmarking")
     parser.add_argument("--benchmark-dir", type=str, default="./benchmark_files/", help="directory where benchmark data is saved")
     parser.add_argument("--plots-dir", type=str, default="./learning_curves/", help="directory where plot data is saved")
+    # Add Noise for observation 
+    parser.add_argument("--noise-type", type=int, default=0, help="type can be: 0-none, 1-truncated normal distribution, 2-normal distribution")
+    parser.add_argument('--noise-std', type=float, default=1.0, help='{0.0, 1.0, 2.0, 3.0, ...}, noise standard deviation')
+    parser.add_argument("--d-value", type=float, default=1.0, help="a radius denoting how large the perturbation set is")
     return parser.parse_args()
 
 def mlp_model(input, num_outputs, scope, reuse=False, num_units=64, rnn_cell=None):
@@ -80,13 +84,13 @@ def get_trainers(env, num_adversaries, obs_shape_n, arglist):
         print("{} bad agents".format(i))
         policy_name = arglist.bad_policy
         trainers.append(trainer(
-            "agent_%d" % i, model, obs_shape_n, env.action_space, i, arglist,
+            "agent_%d" % i, model, obs_shape_n, env.observation_space, env.action_space, i, arglist,
             policy_name == 'ddpg', policy_name, policy_name == 'mmmaddpg'))
     for i in range(num_adversaries, env.n):
         print("{} good agents".format(i))
         policy_name = arglist.good_policy
         trainers.append(trainer(
-            "agent_%d" % i, model, obs_shape_n, env.action_space, i, arglist,
+            "agent_%d" % i, model, obs_shape_n, env.observation_space, env.action_space, i, arglist,
             policy_name == 'ddpg', policy_name, policy_name == 'mmmaddpg'))
     return trainers
 

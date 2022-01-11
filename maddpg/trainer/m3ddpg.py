@@ -6,7 +6,13 @@ import maddpg.common.tf_util as U
 from maddpg.common.distributions import make_pdtype
 from maddpg import AgentTrainer
 from maddpg.trainer.replay_buffer import ReplayBuffer
+import scipy.stats as stats
 
+def TruncatedNormal(mean = 0.0, std = 1.0, threshold = 1.0):
+    lower, upper = -threshold, threshold
+    mu, sigma = mean, std
+    X = stats.truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+    return X
 
 def discount_with_dones(rewards, dones, gamma):
     discounted = []
@@ -25,13 +31,14 @@ def make_update_exp(vals, target_vals):
     expression = tf.group(*expression)
     return U.function([], [], updates=[expression])
 
-def p_train(make_obs_ph_n, act_space_n, p_index, p_func, q_func, optimizer, adversarial, adv_eps, adv_eps_s, num_adversaries, grad_norm_clipping=None, local_q_func=False, num_units=64, scope="trainer", reuse=None):
+def p_train(make_obs_ph_n, obs_space_n, act_space_n, p_index, p_func, q_func, optimizer, adversarial, adv_eps, adv_eps_s, num_adversaries, grad_norm_clipping=None, local_q_func=False, num_units=64, scope="trainer", reuse=None):
     with tf.variable_scope(scope, reuse=reuse):
         # create distribtuions
+        obs_pdtype_n = [make_pdtype(obs_space) for obs_space in obs_space_n]
         act_pdtype_n = [make_pdtype(act_space) for act_space in act_space_n]
 
         # set up placeholders
-        obs_ph_n = make_obs_ph_n
+        obs_ph_n = [obs_pdtype_n[i].sample_placeholder([None], name="pObs"+str(i)) for i in range(len(obs_space_n))]
         act_ph_n = [act_pdtype_n[i].sample_placeholder([None], name="action"+str(i)) for i in range(len(act_space_n))]
 
         p_input = obs_ph_n[p_index]
@@ -48,9 +55,9 @@ def p_train(make_obs_ph_n, act_space_n, p_index, p_func, q_func, optimizer, adve
         act_input_n = act_ph_n + []
         act_input_n[p_index] = act_pd.sample()
 
-        q_input = tf.concat(obs_ph_n + act_input_n, 1)
+        q_input = tf.concat(make_obs_ph_n + act_input_n, 1)
         if local_q_func:
-            q_input = tf.concat([obs_ph_n[p_index], act_input_n[p_index]], 1)
+            q_input = tf.concat([make_obs_ph_n[p_index], act_input_n[p_index]], 1)
         q = q_func(q_input, 1, scope="q_func", reuse=True, num_units=num_units)[:,0]
         pg_loss = -tf.reduce_mean(q)
 
@@ -76,7 +83,7 @@ def p_train(make_obs_ph_n, act_space_n, p_index, p_func, q_func, optimizer, adve
         optimize_expr = U.minimize_and_clip(optimizer, loss, p_func_vars, grad_norm_clipping)
 
         # Create callable functions
-        train = U.function(inputs=obs_ph_n + act_ph_n, outputs=loss, updates=[optimize_expr])
+        train = U.function(inputs=make_obs_ph_n + act_ph_n + obs_ph_n, outputs=loss, updates=[optimize_expr])
         act = U.function(inputs=[obs_ph_n[p_index]], outputs=act_sample)
         p_values = U.function([obs_ph_n[p_index]], p)
 
@@ -145,7 +152,7 @@ def q_train(make_obs_ph_n, act_space_n, q_index, q_func, optimizer, adversarial,
         return train, update_target_q, {'q_values': q_values, 'target_q_values': target_q_values}
 
 class M3DDPGAgentTrainer(AgentTrainer):
-    def __init__(self, name, model, obs_shape_n, act_space_n, agent_index, args, local_q_func, policy_name, adversarial):
+    def __init__(self, name, model, obs_shape_n, obs_space_n, act_space_n, agent_index, args, local_q_func, policy_name, adversarial):
         self.name = name
         self.scope = self.name + "_" + policy_name
         self.n = len(obs_shape_n)
@@ -174,6 +181,7 @@ class M3DDPGAgentTrainer(AgentTrainer):
         self.act, self.p_train, self.p_update, self.p_debug = p_train(
             scope=self.scope,
             make_obs_ph_n=obs_ph_n,
+            obs_space_n = obs_space_n,
             act_space_n=act_space_n,
             p_index=agent_index,
             p_func=model,
@@ -195,6 +203,7 @@ class M3DDPGAgentTrainer(AgentTrainer):
         self.adversarial = adversarial
         self.act_space_n = act_space_n
         self.local_q_func = local_q_func
+        self.X = TruncatedNormal(std = args.noise_std)
 
     def debuginfo(self):
         return {'name': self.name, 'index': self.agent_index, 'scope': self.scope,
@@ -211,6 +220,15 @@ class M3DDPGAgentTrainer(AgentTrainer):
 
     def preupdate(self):
         self.replay_sample_index = None
+    
+    def addNoise(self, origin_obs):
+        obs_array = []
+        for i in range(self.n):
+            temp = np.array(origin_obs[i])
+            noise = self.X.rvs(np.size(temp)) * self.args.d_value
+            noise.shape = temp.shape
+            obs_array.append((temp+noise).tolist())
+        return obs_array
 
     def update(self, agents, t):
         if len(self.replay_buffer) < self.max_replay_buffer_len: # replay buffer is not large enough
@@ -235,14 +253,20 @@ class M3DDPGAgentTrainer(AgentTrainer):
         num_sample = 1
         target_q = 0.0
         for i in range(num_sample):
-            target_act_next_n = [agents[i].p_debug['target_act'](obs_next_n[i]) for i in range(self.n)]
+            noise_obs_next_n = obs_next_n
+            if self.args.noise_type != 0:
+                noise_obs_next_n = self.addNoise(noise_obs_next_n)
+            target_act_next_n = [agents[i].p_debug['target_act'](noise_obs_next_n[i]) for i in range(self.n)]
             target_q_next = self.q_debug['target_q_values'](*(obs_next_n + target_act_next_n))
             target_q += rew + self.args.gamma * (1.0 - done) * target_q_next
         target_q /= num_sample
         q_loss = self.q_train(*(obs_n + act_n + [target_q]))
 
         # train p network
-        p_loss = self.p_train(*(obs_n + act_n))
+        noise_obs_n = obs_n
+        if self.args.noise_type != 0:
+            noise_obs_n = self.addNoise(noise_obs_n)
+        p_loss = self.p_train(*(obs_n + act_n + noise_obs_n))
 
         self.p_update()
         self.q_update()
