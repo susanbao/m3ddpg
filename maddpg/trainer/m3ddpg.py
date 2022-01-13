@@ -212,6 +212,8 @@ class M3DDPGAgentTrainer(AgentTrainer):
                 'adv_eps': self.args.adv_eps}
 
     def action(self, obs):
+        if self.args.noise_type != 0:
+            return self.act([obs])[0]
         return self.act(obs[None])[0]
 
     def experience(self, obs, act, rew, new_obs, done, terminal):

@@ -13,6 +13,7 @@ sys.path.append('../../../')
 import maddpg.common.tf_util as U
 from maddpg.trainer.m3ddpg import M3DDPGAgentTrainer
 import tensorflow.contrib.layers as layers
+from maddpg.trainer.m3ddpg import TruncatedNormal
 
 def parse_args():
     parser = argparse.ArgumentParser("Reinforcement Learning experiments for multiagent environments")
@@ -94,6 +95,14 @@ def get_trainers(env, num_adversaries, obs_shape_n, arglist):
             policy_name == 'ddpg', policy_name, policy_name == 'mmmaddpg'))
     return trainers
 
+def addNoise(origin_obs, X, d_value, n):
+    obs_array = []
+    for i in range(n):
+        temp = np.array(origin_obs[i])
+        noise = X.rvs(np.size(temp)) * d_value
+        noise.shape = temp.shape
+        obs_array.append((temp+noise).tolist())
+    return obs_array
 
 def train(arglist):
     np.random.seed(71)
@@ -105,6 +114,7 @@ def train(arglist):
         num_adversaries = min(env.n, arglist.num_adversaries)
         trainers = get_trainers(env, num_adversaries, obs_shape_n, arglist)
         print('Using good policy {} and bad policy {} with {} adversaries'.format(arglist.good_policy, arglist.bad_policy, num_adversaries))
+        X = TruncatedNormal(std = arglist.noise_std)
 
         # Initialize
         U.initialize()
@@ -128,15 +138,14 @@ def train(arglist):
         print('Starting iterations...')
         while True:
             # get action
+            if arglist.noise_type != 0:
+                obs_n = addNoise(obs_n, X, arglist.d_value, env.n)
             action_n = [agent.action(obs) for agent, obs in zip(trainers,obs_n)]
             # environment step
             new_obs_n, rew_n, done_n, info_n = env.step(action_n)
             episode_step += 1
             done = all(done_n)
             terminal = (episode_step >= arglist.max_episode_len)
-            # collect experience
-            for i, agent in enumerate(trainers):
-                agent.experience(obs_n[i], action_n[i], rew_n[i], new_obs_n[i], done_n[i], terminal)
             obs_n = new_obs_n
 
             for i, rew in enumerate(rew_n):
@@ -160,14 +169,6 @@ def train(arglist):
                 env.render()
                 continue
 
-            # update all trainers, if not in display or benchmark mode
-            if not arglist.test:
-                loss = None
-                for agent in trainers:
-                    agent.preupdate()
-                for agent in trainers:
-                    loss = agent.update(trainers, train_step)
-
             # save model, display training output
             if terminal and (len(episode_rewards) % arglist.save_rate == 0):
                 # print statement depends on whether or not there are adversaries
@@ -179,10 +180,6 @@ def train(arglist):
                         train_step, len(episode_rewards), np.mean(episode_rewards),
                         [np.mean(rew) for rew in agent_rewards], round(time.time()-t_start, 3)))
                 t_start = time.time()
-                # Keep track of final episode reward
-                final_ep_rewards.append(np.mean(episode_rewards[-arglist.save_rate:]))
-                for rew in agent_rewards:
-                    final_ep_ag_rewards.append(np.mean(rew[-arglist.save_rate:]))
 
             # saves final episode reward for plotting training curve later
             if len(episode_rewards) >= arglist.num_episodes:
