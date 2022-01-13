@@ -88,11 +88,11 @@ def get_perturbed_trainers(env, num_adversaries, obs_shape_n, arglist):
     for i in range(num_adversaries):
         trainers.append(trainer(
             policy + "_agent_%d" % i, model, obs_shape_n, env.observation_space, env.action_space, i, arglist,
-            local_q_func=(arglist.adv_policy=='ddpg')))
+            local_q_func=(policy=='ddpg')))
     for i in range(num_adversaries, env.n):
         trainers.append(trainer(
             policy + "_agent_%d" % i, model, obs_shape_n, env.observation_space, env.action_space, i, arglist,
-            local_q_func=(arglist.good_policy=='ddpg')))
+            local_q_func=(policy=='ddpg')))
     return trainers
 
 def get_trainers(env, num_adversaries, obs_shape_n, arglist, perturbed_trainers):
