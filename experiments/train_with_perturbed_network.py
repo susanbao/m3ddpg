@@ -5,6 +5,7 @@ import time
 import pickle
 import sys
 import os
+import re
 
 sys.path.append('../')
 sys.path.append('../../')
@@ -40,6 +41,7 @@ def parse_args():
     parser.add_argument("--load-name", type=str, default="", help="name of which training state and model are loaded, leave blank to load seperately")
     parser.add_argument("--load-good", type=str, default="", help="which good policy to load")
     parser.add_argument("--load-bad", type=str, default="", help="which bad policy to load")
+    parser.add_argument("--load-dir", type=str, default="", help="directory in which training state and model are loaded")
     # Evaluation
     parser.add_argument("--test", action="store_true", default=False)
     parser.add_argument("--restore", action="store_true", default=False)
@@ -101,13 +103,13 @@ def get_trainers(env, num_adversaries, obs_shape_n, arglist, perturbed_trainers)
         print("{} bad agents".format(i))
         policy_name = arglist.bad_policy
         trainers.append(trainer(
-            "agent_%d" % i, model, obs_shape_n, env.observation_space, env.action_space, i, arglist, perturbed_trainers
+            policy_name + "agent_%d" % i, model, obs_shape_n, env.observation_space, env.action_space, i, arglist, perturbed_trainers,
             policy_name == 'ddpg', policy_name, policy_name == 'mmmaddpg'))
     for i in range(num_adversaries, env.n):
         print("{} good agents".format(i))
         policy_name = arglist.good_policy
         trainers.append(trainer(
-            "agent_%d" % i, model, obs_shape_n, env.observation_space, env.action_space, i, arglist, perturbed_trainers
+            policy_name + "agent_%d" % i, model, obs_shape_n, env.observation_space, env.action_space, i, arglist, perturbed_trainers,
             policy_name == 'ddpg', policy_name, policy_name == 'mmmaddpg'))
     return trainers
 
