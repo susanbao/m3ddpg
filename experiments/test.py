@@ -173,12 +173,12 @@ def train(arglist):
             if terminal and (len(episode_rewards) % arglist.save_rate == 0):
                 # print statement depends on whether or not there are adversaries
                 if num_adversaries == 0:
-                    print("episodes: {}, mean episode reward: {}, time: {}".format(
+                    print("episodes: {}, mean episode reward: {}, std deviation: {}, time: {}".format(
                         len(episode_rewards), np.mean(episode_rewards), round(time.time()-t_start, 3)))
                 else:
-                    print("episodes: {}, mean episode reward: {}, agent episode reward: {}, time: {}".format(
-                        len(episode_rewards), np.mean(episode_rewards),
-                        [np.mean(rew) for rew in agent_rewards], round(time.time()-t_start, 3)))
+                    print("episodes: {}, mean episode reward: {}, agent episode reward: {}, std deviation: {}, agent std deviation: {}, time: {}".format(
+                        len(episode_rewards), np.mean(episode_rewards), 
+                        [np.mean(rew) for rew in agent_rewards], np.std(episode_rewards), [np.std(rew) for rew in agent_rewards], round(time.time()-t_start, 3)))
                 t_start = time.time()
 
             # saves final episode reward for plotting training curve later
