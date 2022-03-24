@@ -1,0 +1,12 @@
+nohup: ignoring input
+2022-03-23 17:18:22.687614: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+2022-03-23 17:18:22.972741: I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:897] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+2022-03-23 17:18:22.973720: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1405] Found device 0 with properties: 
+name: Quadro RTX 6000 major: 7 minor: 5 memoryClockRate(GHz): 1.77
+pciBusID: 0000:4c:00.0
+totalMemory: 23.65GiB freeMemory: 23.49GiB
+2022-03-23 17:18:22.973731: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1484] Adding visible gpu devices: 0
+2022-03-23 17:18:23.251368: I tensorflow/core/common_runtime/gpu/gpu_device.cc:965] Device interconnect StreamExecutor with strength 1 edge matrix:
+2022-03-23 17:18:23.251412: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971]      0 
+2022-03-23 17:18:23.251416: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] 0:   N 
+2022-03-23 17:18:23.251499: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1097] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 5328 MB memory) -> physical GPU (device: 0, name: Quadro RTX 6000, pci bus id: 0000:4c:00.0, compute capability: 7.5)
