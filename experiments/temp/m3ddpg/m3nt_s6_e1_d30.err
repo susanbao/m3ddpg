@@ -1,0 +1,11 @@
+nohup: ignoring input
+2022-03-23 21:41:03.721103: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+2022-03-23 21:41:04.020538: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1405] Found device 0 with properties: 
+name: Quadro RTX 6000 major: 7 minor: 5 memoryClockRate(GHz): 1.77
+pciBusID: 0000:01:00.0
+totalMemory: 23.64GiB freeMemory: 23.49GiB
+2022-03-23 21:41:04.020574: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1484] Adding visible gpu devices: 0
+2022-03-23 21:41:04.300936: I tensorflow/core/common_runtime/gpu/gpu_device.cc:965] Device interconnect StreamExecutor with strength 1 edge matrix:
+2022-03-23 21:41:04.300983: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971]      0 
+2022-03-23 21:41:04.300987: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] 0:   N 
+2022-03-23 21:41:04.301080: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1097] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 5326 MB memory) -> physical GPU (device: 0, name: Quadro RTX 6000, pci bus id: 0000:01:00.0, compute capability: 7.5)
